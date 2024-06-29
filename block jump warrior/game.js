@@ -4,6 +4,8 @@ const ctx = canvas.getContext("2d");
 
 console.log("Script started");
 
+let gameRunning = false;
+
 let gameState = {
   player: {
     x: 50,
@@ -24,6 +26,7 @@ let gameState = {
     invulnerabilityTimer: 0,
     blinkTimer: 0,
   },
+  difficultyMultiplier: 1,
   enemies: [],
   coins: [],
   gravity: 0.5,
@@ -49,12 +52,13 @@ function createEnemy(side) {
     y: gameState.ground - 40,
     width: 30,
     height: 40,
-    speed: 2,
+    speed: 2 * gameState.difficultyMultiplier,
     direction: side === "left" ? 1 : -1,
     health: 1,
     attacking: false,
     attackAngle: -Math.PI / 2,
     attackTimer: 0,
+    damage: 5 * gameState.difficultyMultiplier,
   };
 }
 
@@ -74,6 +78,11 @@ function initGame() {
   // Spawn only one enemy on the right side
   gameState.enemies.push(createEnemy("right"));
   console.log("Initial enemy created on the right side");
+}
+
+function showGameOver() {
+  gameRunning = false;
+  document.getElementById("gameOverScreen").style.display = "flex";
 }
 
 function checkCollision(rect1, rect2) {
@@ -99,6 +108,11 @@ function checkSwordCollision(player, enemy) {
 }
 
 function update() {
+  if (gameState.player.health <= 0) {
+    showGameOver();
+    return;
+  }
+
   // Player movement
   if (gameState.keys.KeyA) {
     gameState.player.velocityX = -gameState.player.speed;
@@ -156,12 +170,20 @@ function update() {
 
   // Enemy spawning
   gameState.enemySpawnTimer++;
-  if (gameState.enemySpawnTimer >= 360 && gameState.enemies.length < 5) {
-    // 6 seconds at 60 FPS
+  const spawnInterval = Math.max(60, 360 / gameState.difficultyMultiplier); // Minimum spawn interval of 1 second
+  if (
+    gameState.enemySpawnTimer >= spawnInterval &&
+    gameState.enemies.length < 5
+  ) {
     gameState.enemies.push(createEnemy(gameState.spawnSide));
     gameState.spawnSide = gameState.spawnSide === "left" ? "right" : "left";
     gameState.enemySpawnTimer = 0;
-    console.log(`New enemy spawned from the ${gameState.spawnSide} side`);
+
+    // Increase difficulty
+    gameState.difficultyMultiplier *= 1.01; // 1% increase
+    console.log(
+      `Difficulty increased to ${gameState.difficultyMultiplier.toFixed(2)}`
+    );
   }
 
   // Enemy update and collision
@@ -205,14 +227,14 @@ function update() {
       !gameState.player.invulnerable &&
       checkCollision(gameState.player, enemy)
     ) {
-      gameState.player.health -= 5; // 5% damage
+      gameState.player.health -= enemy.damage; // Use enemy's damage property
       gameState.player.velocityX += enemy.direction * 10; // Knockback
       gameState.player.invulnerable = true;
       gameState.player.invulnerabilityTimer = 60; // 1 second at 60 FPS
       gameState.player.blinkTimer = 0;
       if (gameState.player.health <= 0) {
         console.log("Game Over");
-        // Implement game over logic here
+        showGameOver();
       }
     }
 
@@ -417,8 +439,10 @@ function draw() {
 }
 
 function gameLoop() {
-  update();
-  draw();
+  if (gameRunning) {
+    update();
+    draw();
+  }
   requestAnimationFrame(gameLoop);
 }
 
@@ -440,6 +464,29 @@ document.addEventListener("keydown", (e) => {
 document.addEventListener("keyup", (e) => {
   gameState.keys[e.code] = false;
 });
+
+document
+  .getElementById("playAgainButton")
+  .addEventListener("click", restartGame);
+
+function restartGame() {
+  gameState.player.health = 100;
+  gameState.player.x = 50;
+  gameState.player.y = 300;
+  gameState.player.coins = 0;
+  gameState.enemies = [];
+  gameState.coins = [];
+  gameState.difficultyMultiplier = 1; // Reset difficulty
+  gameRunning = true;
+  document.getElementById("gameOverScreen").style.display = "none";
+}
+
+document.getElementById("startButton").addEventListener("click", startGame);
+
+function startGame() {
+  restartGame(); // This will reset the game state and hide the game over screen if it's visible
+  document.getElementById("startScreen").style.display = "none";
+}
 
 // Initialize and start the game
 console.log("Initializing game");

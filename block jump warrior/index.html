@@ -1,24 +1,83 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Medieval Platformer</title>
     <style>
-        html, body {
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-            width: 100%;
-            height: 100%;
-        }
-        canvas {
-            display: block;
-        }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        width: 100%;
+        height: 100%;
+      }
+      canvas {
+        display: block;
+      }
+      #startScreen,
+      #gameOverScreen {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.7);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        color: white;
+      }
+      #startButton,
+      #playAgainButton {
+        font-size: 24px;
+        padding: 10px 20px;
+        cursor: pointer;
+        margin-top: 20px;
+      }
+      #gameOverText {
+        font-size: 48px;
+        margin-bottom: 20px;
+      }
+      #controls {
+        position: absolute;
+        right: 10px;
+        top: 33.34vh; /* This places it 1/3 down the screen */
+        transform: translateY(
+          -50%
+        ); /* This centers it vertically at that position */
+        background: rgba(0, 0, 0, 0.5);
+        color: white;
+        padding: 10px;
+        border-radius: 5px;
+        font-family: Arial, sans-serif;
+      }
+      #controls p {
+        margin: 5px 0;
+      }
+      #controls p:first-child {
+        font-weight: bold;
+        margin-bottom: 10px;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <canvas id="gameCanvas"></canvas>
+    <div id="startScreen">
+      <button id="startButton">Start Game</button>
+    </div>
+    <div id="gameOverScreen" style="display: none">
+      <div id="gameOverText">Game Over</div>
+      <button id="playAgainButton">Play Again</button>
+    </div>
+    <div id="controls">
+      <p>Controls:</p>
+      <p>A/D: Move left/right</p>
+      <p>Space: Jump</p>
+      <p>K: Attack</p>
+    </div>
     <script src="game.js"></script>
-</body>
+  </body>
 </html>
