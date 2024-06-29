@@ -30,7 +30,7 @@ let gameState = {
   ground: 0,
   keys: {},
   enemySpawnTimer: 0,
-  spawnSide: "left", // Alternates between 'left' and 'right'
+  spawnSide: "left", // We'll start with 'left' so the first spawn after the initial one will be on the left
 };
 
 console.log("Game state initialized");
@@ -52,6 +52,9 @@ function createEnemy(side) {
     speed: 2,
     direction: side === "left" ? 1 : -1,
     health: 1,
+    attacking: false,
+    attackAngle: -Math.PI / 2,
+    attackTimer: 0,
   };
 }
 
@@ -68,9 +71,9 @@ function createCoin(x, y) {
 
 function initGame() {
   resizeCanvas();
-  gameState.enemies.push(createEnemy("left"));
+  // Spawn only one enemy on the right side
   gameState.enemies.push(createEnemy("right"));
-  console.log("Initial enemies created");
+  console.log("Initial enemy created on the right side");
 }
 
 function checkCollision(rect1, rect2) {
@@ -153,11 +156,12 @@ function update() {
 
   // Enemy spawning
   gameState.enemySpawnTimer++;
-  if (gameState.enemySpawnTimer >= 600 && gameState.enemies.length < 5) {
-    // 10 seconds at 60 FPS
+  if (gameState.enemySpawnTimer >= 360 && gameState.enemies.length < 5) {
+    // 6 seconds at 60 FPS
     gameState.enemies.push(createEnemy(gameState.spawnSide));
     gameState.spawnSide = gameState.spawnSide === "left" ? "right" : "left";
     gameState.enemySpawnTimer = 0;
+    console.log(`New enemy spawned from the ${gameState.spawnSide} side`);
   }
 
   // Enemy update and collision
@@ -171,6 +175,29 @@ function update() {
     } else if (enemy.x > canvas.width) {
       enemy.x = canvas.width - enemy.width;
       enemy.direction = -1;
+    }
+
+    // Enemy attack logic
+    if (!enemy.attacking && Math.random() < 0.005) {
+      // 0.5% chance to start attack each frame
+      enemy.attacking = true;
+      enemy.attackAngle = -Math.PI / 2 + Math.PI / 9;
+    }
+
+    if (enemy.attacking) {
+      if (enemy.attackAngle < 0) {
+        enemy.attackAngle += 0.3;
+        if (enemy.attackAngle >= 0) {
+          enemy.attackAngle = 0;
+          enemy.attackTimer = 20; // 1/3 second at 60 FPS
+        }
+      } else if (enemy.attackTimer > 0) {
+        enemy.attackTimer--;
+        if (enemy.attackTimer === 0) {
+          enemy.attacking = false;
+          enemy.attackAngle = -Math.PI / 2 + Math.PI / 9;
+        }
+      }
     }
 
     // Player-Enemy collision
@@ -287,10 +314,67 @@ function draw() {
   );
   ctx.stroke();
 
-  // Draw enemies
-  ctx.fillStyle = "red";
+  // Draw enemies (crocodiles)
   gameState.enemies.forEach((enemy) => {
+    // Body
+    ctx.fillStyle = "#2ecc71"; // Crocodile green
     ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+
+    // Head
+    ctx.beginPath();
+    ctx.arc(enemy.x + enemy.width / 2, enemy.y - 5, 12, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Eyes
+    ctx.fillStyle = "white";
+    ctx.beginPath();
+    ctx.arc(enemy.x + enemy.width / 2 - 5, enemy.y - 7, 3, 0, Math.PI * 2);
+    ctx.arc(enemy.x + enemy.width / 2 + 5, enemy.y - 7, 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "black";
+    ctx.beginPath();
+    ctx.arc(enemy.x + enemy.width / 2 - 5, enemy.y - 7, 1.5, 0, Math.PI * 2);
+    ctx.arc(enemy.x + enemy.width / 2 + 5, enemy.y - 7, 1.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Triangular ears
+    ctx.fillStyle = "#27ae60"; // Darker green for ears
+    ctx.beginPath();
+    ctx.moveTo(enemy.x + enemy.width / 2 - 12, enemy.y - 5);
+    ctx.lineTo(enemy.x + enemy.width / 2 - 20, enemy.y - 15);
+    ctx.lineTo(enemy.x + enemy.width / 2 - 4, enemy.y - 15);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(enemy.x + enemy.width / 2 + 12, enemy.y - 5);
+    ctx.lineTo(enemy.x + enemy.width / 2 + 20, enemy.y - 15);
+    ctx.lineTo(enemy.x + enemy.width / 2 + 4, enemy.y - 15);
+    ctx.fill();
+
+    // Spikes
+    ctx.fillStyle = "#27ae60"; // Darker green for spikes
+    for (let i = 0; i < 3; i++) {
+      ctx.beginPath();
+      ctx.moveTo(enemy.x + enemy.width * (0.2 + i * 0.3), enemy.y);
+      ctx.lineTo(enemy.x + enemy.width * (0.3 + i * 0.3), enemy.y - 10);
+      ctx.lineTo(enemy.x + enemy.width * (0.4 + i * 0.3), enemy.y);
+      ctx.fill();
+    }
+
+    // Draw dagger
+    ctx.strokeStyle = "rgb(170, 190, 210)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(
+      enemy.x + (enemy.direction > 0 ? enemy.width : 0),
+      enemy.y + enemy.height / 2
+    );
+    ctx.lineTo(
+      enemy.x +
+        (enemy.direction > 0 ? enemy.width : 0) +
+        Math.cos(enemy.attackAngle) * 30 * enemy.direction,
+      enemy.y + enemy.height / 2 + Math.sin(enemy.attackAngle) * 30
+    );
+    ctx.stroke();
   });
 
   // Draw coins
